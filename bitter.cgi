@@ -6,27 +6,30 @@ use CGI::Cookie;
 
 sub main() {
 	
-	$dataset_size = "medium"; 
+	$dataset_size = "medium"; 						#initialize some variables and parameters
 	$users_dir = "dataset-$dataset_size/users";
 	%users = ();
 	%bleats = ();
 	$debug = 1;
 	$submit = param('submit');
 	$svalue = param('svalue');
-	$page = param('page');
+	$svalue = lc($svalue);
+	$bvalue = param('bvalue');
+	$bvalue = lc($bvalue);
+	$page = param('page');	
+	$username = param('Username') || undef;
+	$password = param('Password') || undef;
 	
-	my $username = param('Username') || undef;
-	my $password = param('Password') || undef;
 	my $loginSuccess = "";
-	if (defined $username && defined $password) {
+	if (defined $username && defined $password) {	     #Case: When a user tries to login via the Login Page
 		$loginSuccess = checkUser($username, $password); #authenticates the user and if successful, creates a cookie and sends it via header()
-		CGI->delete('Username');				 #also prints header() regardless of success or fail
+		CGI->delete('Username');				 	     #also prints header() regardless of success or fail
 		CGI->delete('Password');
-	} elsif ($submit eq "Logout") {  		     
-		$loginSuccess = logout();			     #clears all cookie values, and expires them, then sends them via header()
+	} elsif ($submit eq "Logout") {  		     		#Case: when a user clicks on the logout link
+		$loginSuccess = logout();			     		#clears all cookie values, and expires them, then sends them via header()
 		CGI->delete('submit','svalue','page');
 		CGI->delete('submit','svalue','page');
-	} else { 				 				     #prints a header in case the previous if statements didn't execute
+	} else { 				 				            #prints a header in case the previous if statements didn't execute
 		print header();
 	}
 
@@ -34,56 +37,57 @@ sub main() {
 	page_header();
 	# Now tell CGI::Carp to embed any warning in HTML
 	warningsToBrowser(1);
-	%cookie = CGI::Cookie->fetch;
+	
+	%cookie = CGI::Cookie->fetch;						 #retrieves cookies to save and maintain whoever was logged in prior
 	if ($cookie{'Username'} && $cookie{'Password'}) {
 		$username = $cookie{'Username'}->value;
 		$password = $cookie{'Password'}->value;
 	} 
 	
 	if ((defined $username && defined $password) && !($submit eq "Logout")) {
-		navbar_logout();
-	} else {
+		navbar_logout();								#prints out different navbars depending on whether
+	} else { 											#a user is logged in or not
 		navbar();
 	}
 
-	newBleat();
-	print "submit = $submit\n"."username = $username\n"."password = $password\n"."loginsuccess = $loginSuccess\n";
+	$newBleatSuccess = newBleat();						#function that creates a new bleat if a bleat was created via the send_bleat_page();
+														#returns an empty string if it doesn't execute, false if it failed to execute.
 	
-	if (defined $page) {
-#		print login_button();
+	if (defined $page) {								#Functionality for the User search. Displays the User without bleats
 		print searchBar();
+		print bleatBar();
 		print searchResult($page);
 		print page_trailer();
-	} elsif (($submit eq "Search")&&(defined $svalue)) {
+	} elsif (($submit eq "User Search")&&(defined $svalue)) {	#Executes if a user presses the "User Search" button
 		print search();
-    } elsif ($submit eq "Login") {
-        login();
+	} elsif (($submit eq "Bleat Search")&&(defined $bvalue)) {   #Executes if a user presses the "Bleat Search" button
+		bleatSearch();
+    } elsif ($submit eq "Login") {								#Executes if the user presses the Log In Button
+        login();												#Takes them to a page where with login forms
 	} elsif ($loginSuccess eq "false login") {
-		param(-name=>'submit', -values=>'Login');
-		print "Invalid Username or Password\n";
+		param(-name=>'submit', -values=>'Login');				#Executes if the user failed to log in
+		print "Invalid Username or Password\n";					#Takes them back to the login page and prints an error message
 		print '<p>';
 		login();
-	} elsif ($submit eq "Send Bleat") {
-		send_bleat_page();
+	} elsif ($submit eq "Send Bleat") {							#Executes if a user presses the "Send Bleat" button
+		send_bleat_page();										#Takes them to the send bleat form
 	} elsif (($newBleatSuccess eq "false")) {
-		param(-name=>'submit', -values=>'Send Bleat');
-		print "Invalid bleat\n";
+		param(-name=>'submit', -values=>'Send Bleat');			#Executes if a user tries to write an invalid bleat
+		print "Invalid bleat\n";								#Takes them back to the send bleat form and prints an error message
 		print '<p>';
 		send_bleat_page();
-	} elsif ($loginSuccess eq "logout") {
-		print searchBar();
-		print user_page();
-		print page_trailer();
+	} elsif ($loginSuccess eq "logout") {						#Escapes the problem of having to refresh the page for the cookie data
+		print user_page();										#to be deleted.
+		print page_trailer();									#Basically all the functionality of the LogOut button.
 		CGI->delete('submit','svalue','page');
 	} elsif ((defined $username && defined $password) || ($loginSuccess eq "login")) {
 		print searchBar();
-		print send_bleat_button();
-		print page($username);
+		print bleatBar();										#Basic user page when someone is logged in
+		print page($username);									#Or statement is to escape the problem of 
+																#having the refresh the page for cookie data to be loaded
 		print page_trailer();
 	} else {
-   #    print login_button();
-		print searchBar();
-		print user_page();
+		print user_page();										#Page when user is not logged in.
 		print page_trailer();
 	}
 }
@@ -100,6 +104,8 @@ sub logout() {
 	return $success;
 }
 
+#Loads up the User Profile, send bleat button and all their Personal Bleats, 
+#Listen to bleats and Bleats mentioning them
 sub page() {
 	my ($page) = @_;
     my $user_to_show  = "$users_dir/$page/";
@@ -142,14 +148,13 @@ sub page() {
 				$bleats{$bleat}{"time"} = $bl;
 			} elsif ($bl =~ /^bleat: /) {
 				$bl =~ s/^bleat: //;
-				$bleats{$bleat}{"bleat"} = $bl;
+				$bleats{$bleat}{"bleat"} = "My: $bl";
 			} 
 		}
 	}	
 	
 	my @listenBleats = ();
 	foreach my $listen (@arr) {
-		print "listen = $listen\n";
 		$bleats_filename = "$users_dir/$listen/bleats.txt";
 		open my $l, "$bleats_filename" or die "can not open $bleats_filename: $!";
 		@listenBleats = <$l>;
@@ -163,31 +168,31 @@ sub page() {
 					$bleats{$bleat}{"time"} = $bl;
 				} elsif ($bl =~ /^bleat: /) {
 					$bl =~ s/^bleat: //;
-					$bleats{$bleat}{"bleat"} = $bl;
+					$bleats{$bleat}{"bleat"} = "$listen: $bl";
 				}	 
 			}
 		}
 	}
 	
-	my @allBleats = sort(glob("dataset-$dataset_size/bleats/*"));
+	my @bleat4 = sort(glob("dataset-$dataset_size/bleats/*"));
 	my %temp = "";
 	my $tag = "\@$page";
 	my $success = "";
-	foreach $bleat (@allBleats) {
+	foreach $bleat (@bleat4) {
 		open my $t, "$bleat" or die "can not open $bleat: $!";
-		@tagBleats = <$t>;
+		my @tagBleats = <$t>;
 		$success = 0;
 		my $bleat_dir = "dataset-$dataset_size/bleats/";
-		$bleatID = $bleat;
+		my $bleatID = $bleat;
 		$bleatID =~ s/$bleat_dir//;
-		foreach $bl (@bleatContents) {
+		foreach $bl (@tagBleats) {
 			chomp($bl);
 			if ($bl =~ /^time: /) {
 				$bl =~ s/^time: //;
 				$temp{"time"} = $bl;
 			} elsif ($bl =~ /^bleat: /) {
 				$bl =~ s/^bleat: //;
-				$temp{"bleat"} = $bl;
+				$temp{"bleat"} = "tagged: $bl";
 				if ($bl =~ /$tag/) {
 					$success = 1;
 					last;
@@ -206,15 +211,23 @@ sub page() {
 	close $l;
 	close $f;
 	
-	$bleat_info = "Displaying all bleats:";
+	$bleat_info = "Displaying all bleats:".'<p>';
+	$bleat_table;
 	foreach my $key (sort { $bleats{$b}{time} <=> $bleats{$a}{time} } keys %bleats) {
-		$bleat_info = join(" \n", $bleat_info, $bleats{$key}{"bleat"});
+		$bleat_table = "<tr><td>$bleats{$key}{'bleat'}</td></tr>";
+		$bleat_info = join(" \n", $bleat_info, $bleat_table);
 	}
-    return div({-class => "bitter_user_details"}, "\n", img({-src => "$user_to_show/profile.jpg", -alt => ""}), 
-		"\n$user_info\n"), div({-class => "bitter_bleats"}, "\n$bleat_info\n\n"), "\n",
-        '<p>';
+	$allBleats = "<table class=\"table table-hover\"><tbody> $bleat_info </tbody></table>";
+
+	print '<div class="row">'; 
+    return div({-class =>"bitter_user_details col-sm-2"}, "\n", img({-src => "$user_to_show/profile.jpg", -alt => ""}), 
+		"\n$user_info"), div({-class => "bitter_bleats col-sm-10"}, send_bleat_button(), "\n$allBleats\n\n"), "\n",
+        '<p>', 
+	print '</div>';
 }
 
+#Loads up just the User Profile. Used in conjunction with
+#search() so as not to display too much info when searching
 sub searchResult() {
 	my ($page) = @_;
     my $user_to_show  = "$users_dir/$page/";
@@ -248,16 +261,92 @@ sub searchResult() {
         '<p>';
 }
 
+#Processes data and displays a table when the Bleat Search
+#button is pressed
+sub bleatSearch() {
+	my @bleat4 = sort(glob("dataset-$dataset_size/bleats/*"));
+	my %temp = "";
+	my @matches = ();
+	my $success = ();
+	foreach my $bleat (@bleat4) {
+		open my $t, "$bleat" or die "can not open $bleat: $!";
+		my @tagBleats = <$t>;
+		my $bleat_dir = "dataset-$dataset_size/bleats/";
+		my $bleatID = $bleat;
+		$bleatID =~ s/$bleat_dir//;
+		foreach my $bl (@tagBleats) {
+			chomp($bl);
+			$bl = lc($bl);
+			if ($bl =~ /^bleat: /) {
+				$bl =~ s/^bleat: //;
+				if ($bl =~ /$bvalue/) {
+					push (@matches, $bl);
+					last;
+				}
+			}
+		} 	
+	}
+	close $p;
+	print <<eof;
+	<div class="bitter_send">
+	Displaying search results:
+	</div>
+eof
+
+	if ($#matches == "-1") {
+		print "Your search returned 0 matches";
+		print '<p>';
+		print bleatBar(); 
+		print page_trailer();
+	} else {
+		my $string = "";
+		foreach my $match (@matches) {
+            $string .= <<eof;
+            <tr class="bitter_tableRow"><td class="bitter_tableRow">        
+            $match        
+            </td> </tr>
+eof
+		}
+        $toReturn = <<eof;
+            <div class="bitter_bleats">
+            <table class="bitter_tableRow">
+            $string
+            </table>
+            </div>
+eof
+		print bleatBar();
+		print $toReturn;
+		print page_trailer();
+	}
+}
+
+#Displays the bleat search bar
+sub bleatBar() {
+	return start_form(-method=>'GET', -action=>"bitter.cgi"),
+		textfield(-name=>'bvalue',
+		    -value=>"",
+		    -size=>50,
+		    -maxlength=>80, 
+			-border=>#FFFFFF,
+			-border-radius=>5),
+		submit({-class =>"bitter_bleat_button", -name=>'submit', -value=>"Bleat Search"}),
+		end_form(),
+		"<p>";
+}
+
+#Processes data and displays a table when the User Search
+#button is pressed
 sub search() {
 	my @users = sort(glob("$users_dir/*"));
-	$success = 0;
-	@matches = ();
+	my $success = 0;
+	my @matches = ();
 	foreach my $file (@users) {
 		my $details_filename = "$file/details.txt";
 		open my $p, "$details_filename" or die "can not open $details_filename: $!";
 		@details = <$p>;
 		foreach my $line (@details) {
 			chomp($line);
+			$line = lc($line);
 			if ($line =~ /^username: (\w+)/) {
 				my $username = $1;
 				if ($username =~ /$svalue/i) {
@@ -311,32 +400,42 @@ eof
 	}
 }
 
+#Authenticates the User if they tried to log in
+#Creates a cookie if successful.
+#Always prints header().
+#Returns login if succesful, false login if not
 sub checkUser() {
 	my ($name, $password) = @_;
 	my $success = 0;
     my $details_filename = "$users_dir/$name/details.txt";
-	open my $p, "$details_filename" or die "can not open $details_filename: $!";
+	open my $p, "$details_filename" or $success = "fail";
 	@userDetails = <$p>;
-	foreach my $line (@userDetails) {
-		chomp($line);
-		if ($line =~ /^password: /) {
-			$line =~ s/^password: //;
-			if ($password eq $line) {
-				$success = 1;
-				last;
+	if (!($success eq "fail")) {
+		foreach my $line (@userDetails) {
+			chomp($line);
+			if ($line =~ /^password: /) {
+				$line =~ s/^password: //;
+				if ($password eq $line) {
+					$success = 1;
+					last;
+				}
 			}
 		}
-	}
-	if ($success == 1) {
-		my $c = CGI::Cookie->new(-name =>'Username',
-                          -value=>$name,
-                          -expires =>  '+1M');
-		my $d = CGI::Cookie->new(-name => 'Password',
-                          -value=>$password,
-                          -expires =>'+1M');
-		print header(-cookie=>[$c,$d]);
-		$success = "login";
-		return $success;
+		if ($success == 1) {
+			my $c = CGI::Cookie->new(-name =>'Username',
+							-value=>$name,
+							-expires =>  '+1M');
+			my $d = CGI::Cookie->new(-name => 'Password',
+							-value=>$password,
+							-expires =>'+1M');
+			print header(-cookie=>[$c,$d]);
+			$success = "login";
+			return $success;
+		} else {
+			print header();
+			$success = "false login";
+			return $success;
+		}
 	} else {
 		print header();
 		$success = "false login";
@@ -344,6 +443,7 @@ sub checkUser() {
 	}
 }
 
+#Loads up the page where users send bleats
 sub send_bleat_page() {
 	print <<eof;
 	<div class="bitter_send">
@@ -362,6 +462,8 @@ eof
 	print end_form(), <p>;
 }	
 
+#Processes data and creates a bleat when
+#a new bleat is made (via send_bleat_page)
 sub newBleat {
 	my $bleat_sent = param('bleat_sent') || undef;
 	my $new_bleat_data = param('send_bleat') || undef;
@@ -387,12 +489,14 @@ sub newBleat {
 	return $newBleatSuccess;
 }
 
+#Displays the send bleat button
 sub send_bleat_button() {
 	return start_form(-method=>'GET', -action=>"bitter.cgi"),
 		submit({-class =>"bitter_send_button", -name=>'submit', -value=>"Send Bleat"}),
 		end_form(), <p>;
 }
 
+#Loads up the page where users try to login
 sub login() {
     CGI->delete('svalue');
     CGI->delete('page');
@@ -413,6 +517,7 @@ sub login() {
 	print <p>;
 }
 
+#Displays the User Search Bar
 sub searchBar() {
 	return "Enter a full name or username to begin searching:\n", start_form(-method=>'GET', -action=>"bitter.cgi"),
 		textfield(-name=>'svalue',
@@ -421,21 +526,13 @@ sub searchBar() {
 		    -maxlength=>80, 
 			-border=>#FFFFFF,
 			-border-radius=>5),
-		submit({-class =>"bitter_button", -name=>'submit', -value=>"Search"}),
-		end_form(),
-		"<p>";
+		submit({-class =>"bitter_button", -name=>'submit', -value=>"User Search"}),
+		end_form();
 }
 
-#sub login_button {
-#    return start_form(-method=>'GET', -action=>"bitter.cgi"),
-#           submit({-class =>"bitter_loginbutton", -name=>'submit', -value=>"Login"}, span({-class=>"glyphicon glyphicon-log-in"}),
-#		end_form();
-#}
-
-#
-# Show unformatted details for user "n".
-# Increment parameter n and store it as a hidden variable
-#
+#Basic page when user is not logged in
+#Show unformatted details for user "n".
+#Increment parameter n and store it as a hidden variable
 sub user_page {
     my $n = param('n') || 0;
     my @users = sort(glob("$users_dir/*"));
@@ -497,7 +594,6 @@ sub user_page {
         end_form, "\n";
 }
 
-
 #
 # HTML placed at the top of every page
 #
@@ -524,6 +620,7 @@ sub page_header {
 eof
 }
 
+#Navbar when not logged in
 sub navbar {
     print <<eof;
 	<nav class="navbar navbar-inverse">
@@ -548,6 +645,7 @@ sub navbar {
 eof
 }
 
+#Navbar when user is logged in
 sub navbar_logout {
 	print <<eof;
 	<nav class="navbar navbar-inverse">
