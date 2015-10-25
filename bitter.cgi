@@ -269,24 +269,35 @@ sub bleatSearch() {
 	my @bleat4 = sort(glob("dataset-$dataset_size/bleats/*"));
 	my %temp = "";
 	my @matches = ();
-	my $success = ();
+	my $success = "";
+	my $user = "";
+	my $bleatData = "";
+	my $toPush = "";
 	foreach my $bleat (@bleat4) {
 		open my $t, "$bleat" or die "can not open $bleat: $!";
 		my @tagBleats = <$t>;
 		my $bleat_dir = "dataset-$dataset_size/bleats/";
 		my $bleatID = $bleat;
+		$success = 0;
 		$bleatID =~ s/$bleat_dir//;
 		foreach my $bl (@tagBleats) {
 			chomp($bl);
 			$bl = lc($bl);
 			if ($bl =~ /^bleat: /) {
 				$bl =~ s/^bleat: //;
+				$bleatData = $bl;
 				if ($bl =~ /$bvalue/) {
-					push (@matches, $bl);
-					last;
+					$success = 1;
 				}
+			} elsif ($bl =~ /^username: /) {
+				$bl =~ s/^username: //;
+				$user = $bl;
 			}
-		} 	
+		}
+		if ($success == 1) {
+			$toPush = "$user: $bleatData";
+			push (@matches, $toPush);
+		}
 	}
 	close $p;
 	print <<eof;
