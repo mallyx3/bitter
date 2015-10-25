@@ -148,11 +148,10 @@ sub page() {
 				$bleats{$bleat}{"time"} = $bl;
 			} elsif ($bl =~ /^bleat: /) {
 				$bl =~ s/^bleat: //;
-				$bleats{$bleat}{"bleat"} = "My: $bl";
+				$bleats{$bleat}{"bleat"} = "<tr class='bitter_tableRow2'><td class='bitter_tableRow2'> My: $bl</td></tr>";
 			} 
 		}
 	}	
-	
 	my @listenBleats = ();
 	foreach my $listen (@arr) {
 		$bleats_filename = "$users_dir/$listen/bleats.txt";
@@ -168,7 +167,7 @@ sub page() {
 					$bleats{$bleat}{"time"} = $bl;
 				} elsif ($bl =~ /^bleat: /) {
 					$bl =~ s/^bleat: //;
-					$bleats{$bleat}{"bleat"} = "$listen: $bl";
+					$bleats{$bleat}{"bleat"} = "<tr class='bitter_tableRow3'><td class='bitter_tableRow3'>$listen: $bl</td></tr>";
 				}	 
 			}
 		}
@@ -192,7 +191,7 @@ sub page() {
 				$temp{"time"} = $bl;
 			} elsif ($bl =~ /^bleat: /) {
 				$bl =~ s/^bleat: //;
-				$temp{"bleat"} = "tagged: $bl";
+				$temp{"bleat"} = "<tr class='bitter_tableRow4'><td class='bitter_tableRow4'>tagged: $bl</td></tr>";
 				if ($bl =~ /$tag/) {
 					$success = 1;
 					last;
@@ -211,11 +210,14 @@ sub page() {
 	close $l;
 	close $f;
 	
-	$bleat_info = "Displaying all bleats:".'<p>';
-	$bleat_table;
+	$bleat_info = <<eof;
+	<div class="bitter_head">
+	Displaying all bleats:
+	</div>
+eof
+
 	foreach my $key (sort { $bleats{$b}{time} <=> $bleats{$a}{time} } keys %bleats) {
-		$bleat_table = "<tr><td>$bleats{$key}{'bleat'}</td></tr>";
-		$bleat_info = join(" \n", $bleat_info, $bleat_table);
+		$bleat_info = join(" \n", $bleat_info, $bleats{$key}{"bleat"});
 	}
 	$allBleats = "<table class=\"table table-hover\"><tbody> $bleat_info </tbody></table>";
 
@@ -403,7 +405,7 @@ eof
 #Authenticates the User if they tried to log in
 #Creates a cookie if successful.
 #Always prints header().
-#Returns login if succesful, false login if not
+#Returns login if successful, false login if not
 sub checkUser() {
 	my ($name, $password) = @_;
 	my $success = 0;
