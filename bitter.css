@@ -1,0 +1,132 @@
+/*
+ * written by andrewt@cse.unsw.edu.au September 2015
+ * as a starting point for COMP2041/9041 assignment 2
+ * http://cgi.cse.unsw.edu.au/~cs2041/assignments/bitter/
+ *
+ * Change (or replace) the CSS below to create you own look-and-feel
+ *
+ * You will probably want to add  CSS to this file too
+ */
+
+.bitter_heading {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    text-align: center;
+    font-size: x-large;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.bitter_bleats {
+	background-color: #66CCFF;
+    color: #000000;
+	white-space: pre;
+	border:thin solid #FFFFFF;
+	border-radius: 1em;
+	padding-left: 5em;
+}
+
+.bitter_user_details {
+	background-color: #660000;
+	color: #FFFFFF;
+    white-space: pre;
+    border:thin solid #204142;
+    border-radius: 1em;
+    padding-left: 0.42em;
+}
+
+.bitter_global {
+	padding: 10px;
+}
+.bitter_reset_button {
+	border:thin solid #FFFFFF;
+    border-radius: 1em;
+	background-color: #FF3300;
+	color: #FFFFFF;
+	padding: 10px;
+}
+
+.bitter_textfield {
+	height: 100px;
+}
+
+
+.bitter_tableRow {
+    border:thin solid #204142;
+    text-align: center;
+    border-radius: 1em;
+    background-color: White;
+}
+
+.bitter_tableRow2 {
+    border:thin solid #204142;
+    border-radius: 1em;
+    background-color: #ADD6FF;
+}
+.bitter_tableRow3 {
+    border:thin solid #204142;
+    border-radius: 1em;
+    background-color: #33CCFF;
+}
+.bitter_tableRow4 {
+    border:thin solid #204142;
+    border-radius: 1em;
+    background-color: #9933FF;
+}
+
+.bitter_button {
+    background-color: #FEDBCA;
+    border:thin solid #904142;
+    border-radius: 0.42em;
+    color: #904142;
+}
+.bitter_bleat_button {
+	background-color: #66CCFF;
+    color: #000000;
+	white-space: pre;
+	border:thin solid #FFFFFF;
+	border-radius: 0.42em;
+}
+
+.bitter_send {
+	border:thin solid #FFFFFF;
+	border-radius: 1em;
+	color: #B28F00;
+	padding: 10px;
+	font-size: 150%;
+}
+
+.bitter_head {
+	color: #B28F00;
+	font-size: 300%;
+}
+
+
+.bitter_send_button {
+	border:thin solid #FFFFFF;
+    border-radius: 1em;
+	background-color: #B28F00;
+	color: #000000;
+	padding: 10px;
+}
+
+
+
+
+.bitter_login {
+    background-color: #000000;
+    border:thin solid #FFFFFF;
+    border-radius: 1em;
+    color: #FFFFFF;
+    padding: 15px;
+}
+
+.bitter_loginbutton {
+    background-color: #000000;
+    border:thin solid #FFFFFF;
+    border-radius: 1em;
+    color: #FFFFFF;
+    position: absolute;
+    right: 5px;
+    padding: 15px;
+}
